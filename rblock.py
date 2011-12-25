@@ -137,11 +137,11 @@ def pqadd(pq, task, priority):
     entry = [priority, count, task]
     entry_finder[task] = entry
     heappush(pq, entry)
-	return pq
+    return pq
 
 def pqremove(pq, task):
     # Mark an existing task as REMOVED.  Raise KeyError if not found.
-    entry = entry_finder.pop(task)
+    entry = entry_finder.pqpop(task)
     entry[-1] = REMOVED
 
 def pqpop(pq):
@@ -202,25 +202,23 @@ def a_star(maze, f):
     # node = Node(problem.initial)
 	s_row, s_col = findStatePos( maze, 'S' )	# Get the start cordinates from the maze.
 	die = startDie( s_row, s_col )
-    # Ok write the goal test for this guy. What it will be. You send out the problem and your state in the die.
-	if goalTest(die):
-        return die
-    # Damn even priority queue has not been made and I have to make it.
-	frontier = pqadd( [], die, f( die[0][0], die[0][1] ) ) 
+	if goalTest( maze, die ):
+		return die
+	frontier = pqadd( [], die, f(die) ) 	# Make a priority queue for the search.
 	explored = []	# Do not have to make a set a empty list will do the trick just have to check and append.
-    while frontier:
-        die = pqpop( frontier )
-        if goalTest( die ):
-            return die
+	while frontier:
+		die = pqpop( frontier )
+		if goalTest( maze, die ):
+			return die
 		for child in getChildren( die, maze ):
-            if not(isPresent( child, explored )) and not(isPresent( child, frontier )):
-                pqadd( frontier, child, f(die[0][0], die[0][1]) )
-            elif isPresent( child, frontier ):
-                incumbent = frontier[child]
-                if f(child) < f(incumbent):
-                    del frontier[incumbent]
-                    frontier.append(child)
-    return None
+			if not(isPresent( child, explored )) and not(isPresent( child, frontier )):
+				pqadd( frontier, child, f( child ) )
+			elif isPresent( child, frontier ):
+				incumbent = frontier[child]
+				if f( child ) < f( incumbent ):
+					pqremove(frontier, incumbent) #del frontier[incumbent]
+					pqadd(frontier, child, f( child ))
+	return None
 
 # Till now the function takes the input problem file.
 def main():
@@ -246,7 +244,8 @@ def main():
 	# print( "heuristic 1 euclidean distance " + str( h1( s_row, s_col) ) )
 	# print( "heuristic 1 manhattan distance " + str( h2( s_row, s_col) ) )
 	# A* is best first search with the heuristic. How do I send the present cost of 0 to the function.
-	a_star( maze, lambda cost, x, y : cost + h1(x, y) )
+	result = a_star( maze, lambda die: die[2] + h1(die[0][0], die[0][1]) )	# cost, x, y : cost + h1(x, y) 
+	print( str( result ) )
 
 # The starting point for the program.
 main()

@@ -1,7 +1,5 @@
 import sys		  # To do the picking up of the arguments. 
 import math		  # To do the math in heuristic functions.
-import heapq	  # Have to get the priority queue thing working.
-import itertools  # Another one for the priority queue.
 
 # Input file sanity check. No other characters than *, ., S, and G. All lines are equal.
 # Other conditions are one S and G only and any number of . and *. Those are unimplemented.
@@ -113,45 +111,40 @@ def goalTest( maze, die ):
 
 # Function that will tell if the two lists are equivalent or not. Ok I am interested in only first two lists of the lists sent.
 def isPresent( die, explored ):
-	bcord, borient = False, False # cordinates and orientation boolean values.
 	if len( explored ) > 0 :
 		for element in explored:
-			if die[0] == element[0] :
-				bcord = True
-			if die[1] == element[1] :
-				borient = True
-		return bcord and borient
+			if die[0] == element[0] and die[1] == element[1] :
+				return True
+		return False	# Could not find the element in the list.
 	else:
 		return False	# If set is empty then the element is not present.
 
-# Global variables for the priority queue thingy.
-entry_finder = {}				# Mapping of tasks to entries.
-REMOVED = '<removed-task>'		# place holder for a removed task
-counter = itertools.count() 	# unique sequence count
+# This function solely works on the assumption that the element exists. If it does not I do not send any error message.
+# Hope that does not bite me.
+def findIndex( anylist, child ):
+	index = 0
+	for element in anylist:
+		if child[0] == element[0] and child[1] == element[1] :
+			return index
+		else:
+			index = index + 1
 
-def pqadd(pq, task, priority):
-	# Add a new task or update the priority of an existing task
-    if task in entry_finder:
-        pqremove(task)
-    count = next(counter)
-    entry = [priority, count, task]
-    entry_finder[task] = entry
-    heappush(pq, entry)
-    return pq
-
-def pqremove(pq, task):
-    # Mark an existing task as REMOVED.  Raise KeyError if not found.
-    entry = entry_finder.pqpop(task)
-    entry[-1] = REMOVED
-
-def pqpop(pq):
-    # Remove and return the lowest priority task. Raise KeyError if empty.
-    while pq:
-        priority, count, task = heappop(pq)
-        if task is not REMOVED:
-            del entry_finder[task]
-            return task
-    raise KeyError('pop from an empty priority queue')
+# Adds the task in the priority queue as per the order of the heuristic function. This is supposed to be a min queue.
+# So this thing will check if any element in queue is lesser than given and then insert it in position after that lesser element.
+def pqadd(pq, task, f):
+	posfound = False	# A variable to see if any element in list aka priority queue is lesser than given.
+	if len(pq) > 0 :
+		for i in range( len(pq), 0, -1 ): 	# Go from end of loop and keep going till you get a value lesser than what you have.
+			if f( pq[i - 1] ) <= f( task ) :	# Just maintain order in which the elements of equal priority are inserted.
+				posfound = True			# You found a lesser element. Now insert the task after that element and return list.
+				pq.insert( task, i )	# Checked on the corner case, you can use the syntax on the end of list.
+				return pq
+		if not( posfound ):
+			pq.insert( task, 0 ) # The task was lesser than all items in the list. So insert at the beginning of queue.
+			return pq
+	else: # just append the task to the empty queue and return the same.
+		return pq.append( task )
+	return pq
 
 # Ok now have to do the expand thing in the nodes for the list. That is given the die and the problem. I will have to figure out the valid moves it 
 # can take and then make it do them and then return the list of both the dice in the list that will be thrown back.
@@ -166,7 +159,7 @@ def getChildren( die, maze ):
 			if isValidDie( rollDice( die, 'N') ) :	# Check if the north roll gives a valid die.
 				die[0][0] = die[0][0] - 1		# Update the cordinates
 				die[1] = rollDice( die, 'N' )	# Give the new updated dice state
-				die[2] = die[2] + 1				# Increment the cost that you have occured till now.
+				die[2][0] = die[2][0] + 1		# Increment the cost that you have occured till now.
 				die[3].append('N')				# Append the action you took into the list.
 				rolls.append( die )				# Lastly append the die on the return children list.
 	elif die[0][1] > 0 : # Move West
@@ -174,7 +167,7 @@ def getChildren( die, maze ):
 			if isValidDie( rollDice( die, 'W') ) :	# Check if the west roll gives a valid die.
 				die[0][0] = die[0][1] - 1
 				die[1] = rollDice( die, 'W' )
-				die[2] = die[2] + 1	
+				die[2][0] = die[2][0] + 1
 				die[3].append('W')
 				rolls.append( die )	
 	elif die[0][1] < len( maze[0] ) - 1 : # Move East
@@ -182,7 +175,7 @@ def getChildren( die, maze ):
 			if isValidDie( rollDice( die, 'E') ) :	# Check if the east roll gives a valid die.
 				die[0][0] = die[0][1] + 1
 				die[1] = rollDice( die, 'E' )
-				die[2] = die[2] + 1	
+				die[2][0] = die[2][0] + 1
 				die[3].append('E')
 				rolls.append( die )
 	elif die[0][0] < len( maze ) - 1 :	# Move South
@@ -190,34 +183,32 @@ def getChildren( die, maze ):
 			if isValidDie( rollDice( die, 'S') ) :	# Check if the south roll gives a valid die.
 				die[0][0] = die[0][0] + 1
 				die[1] = rollDice( die, 'S' )
-				die[2] = die[2] + 1
+				die[2][0] = die[2][0] + 1
 				die[3].append('S')
 				rolls.append( die )
 	return rolls	# Lastly return the children.
 
 # Right now implementing the a_star algorithm verbatim from the course textbook code base. 
 def a_star(maze, f):
-    # f = memoize(f, 'f')
 	# There are two things for the initial state. 1. Start state position 2. Correct orientation of dice.
-    # node = Node(problem.initial)
 	s_row, s_col = findStatePos( maze, 'S' )	# Get the start cordinates from the maze.
 	die = startDie( s_row, s_col )
 	if goalTest( maze, die ):
 		return die
-	frontier = pqadd( [], die, f(die) ) 	# Make a priority queue for the search.
+	frontier = [ die ]		# You want the priority queue to be a list that you will try to insert and sort the elements.
 	explored = []	# Do not have to make a set a empty list will do the trick just have to check and append.
 	while frontier:
-		die = pqpop( frontier )
+		die = frontier.pop( 0 )		# Get the first element from the list, that will be sorted as priority queue.
 		if goalTest( maze, die ):
 			return die
 		for child in getChildren( die, maze ):
 			if not(isPresent( child, explored )) and not(isPresent( child, frontier )):
-				pqadd( frontier, child, f( child ) )
+				pqadd( frontier, child, f )
 			elif isPresent( child, frontier ):
-				incumbent = frontier[child]
+				incumbent = frontier[ findIndex( frontier, child ) ]
 				if f( child ) < f( incumbent ):
-					pqremove(frontier, incumbent) #del frontier[incumbent]
-					pqadd(frontier, child, f( child ))
+					frontier.pop( findIndex(frontier, incumbent) )	#del frontier[incumbent]
+					pqadd(frontier, child, f)
 	return None
 
 # Till now the function takes the input problem file.
@@ -244,7 +235,7 @@ def main():
 	# print( "heuristic 1 euclidean distance " + str( h1( s_row, s_col) ) )
 	# print( "heuristic 1 manhattan distance " + str( h2( s_row, s_col) ) )
 	# A* is best first search with the heuristic. How do I send the present cost of 0 to the function.
-	result = a_star( maze, lambda die: die[2] + h1(die[0][0], die[0][1]) )	# cost, x, y : cost + h1(x, y) 
+	result = a_star( maze, lambda die: die[2][0] + h1(die[0][0], die[0][1]) )	# cost, x, y : cost + h1(x, y) 
 	print( str( result ) )
 
 # The starting point for the program.

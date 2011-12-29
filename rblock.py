@@ -1,5 +1,6 @@
 import sys		  # To do the picking up of the arguments. 
 import math		  # To do the math in heuristic functions.
+import copy		  # Have to do this for the list copy.
 
 # Input file sanity check. No other characters than *, ., S, and G. All lines are equal.
 # Other conditions are one S and G only and any number of . and *. Those are unimplemented.
@@ -28,6 +29,7 @@ def readMazeFile( mazeF ):
 	return state
 
 # Return the initial die with start cordinates, initial position, path cost and empty list of actions. These all are individual lists.
+# This is supposed to be my problem representation or the node that I will evaluate.
 def startDie( x, y ):
 	return [ [ x, y ], ['u','n','e','w','s','d'], [ 0 ], [] ]	# 1=up, 2=north, 3=east, 4=west, 5=south, 6=down
 
@@ -40,7 +42,7 @@ def isGoalDie( die ):
 
 # Check for the valid move that is face 6 should not be up.
 def isValidDie( die ):
-	if die[1][5] == 'u' :
+	if die[5] == 'u' :
 		return False
 	else:
 		return True
@@ -119,8 +121,7 @@ def isPresent( die, explored ):
 	else:
 		return False	# If set is empty then the element is not present.
 
-# This function solely works on the assumption that the element exists. If it does not I do not send any error message.
-# Hope that does not bite me.
+# This function solely works on the assumption that the child exists in anylist. If it does not I do not send any error message.
 def findIndex( anylist, child ):
 	index = 0
 	for element in anylist:
@@ -129,22 +130,16 @@ def findIndex( anylist, child ):
 		else:
 			index = index + 1
 
-# Adds the task in the priority queue as per the order of the heuristic function. This is supposed to be a min queue.
-# So this thing will check if any element in queue is lesser than given and then insert it in position after that lesser element.
-def pqadd(pq, task, f):
-	posfound = False	# A variable to see if any element in list aka priority queue is lesser than given.
-	if len(pq) > 0 :
-		for i in range( len(pq), 0, -1 ): 	# Go from end of loop and keep going till you get a value lesser than what you have.
-			if f( pq[i - 1] ) <= f( task ) :	# Just maintain order in which the elements of equal priority are inserted.
-				posfound = True			# You found a lesser element. Now insert the task after that element and return list.
-				pq.insert( task, i )	# Checked on the corner case, you can use the syntax on the end of list.
-				return pq
-		if not( posfound ):
-			pq.insert( task, 0 ) # The task was lesser than all items in the list. So insert at the beginning of queue.
-			return pq
-	else: # just append the task to the empty queue and return the same.
-		return pq.append( task )
-	return pq
+# The priority queue poping up function.
+def popElement( frontier, f ):
+	index, counter, min = 0, 0, 1000000
+	for element in frontier:
+		if f( element ) < min :		# This makes sure that first element with min value gets selected.
+			min = f( element )		# A element with value equal to this element but later in the list will not be selected.
+			index = counter
+		else:
+			counter = counter + 1
+	return frontier.pop( index )	# Since lists work as referenced objects so this statement actually removes child from frontier.
 
 # Ok now have to do the expand thing in the nodes for the list. That is given the die and the problem. I will have to figure out the valid moves it 
 # can take and then make it do them and then return the list of both the dice in the list that will be thrown back.
@@ -156,36 +151,37 @@ def getChildren( die, maze ):
 	#	S		'You can move towards S if row < length - 1
 	if die[0][0] > 0 : # Move North. Check the north cell.
 		if isValidCell( die[0][0] - 1 , die[0][1], maze ) :	# If the north cell is valid then roll die north.
-			if isValidDie( rollDice( die, 'N') ) :	# Check if the north roll gives a valid die.
-				die[0][0] = die[0][0] - 1		# Update the cordinates
-				die[1] = rollDice( die, 'N' )	# Give the new updated dice state
-				die[2][0] = die[2][0] + 1		# Increment the cost that you have occured till now.
-				die[3].append('N')				# Append the action you took into the list.
-				rolls.append( die )				# Lastly append the die on the return children list.
-	elif die[0][1] > 0 : # Move West
+			ndie = copy.deepcopy( die )	# Have to get this extra variable else all the guys change the same thing.
+			if isValidDie(rollDice( ndie[1], 'N') ) :	# Check if the north roll gives a valid die. Since lists are reference this already changes orientation.
+				ndie[0][0] = ndie[0][0] - 1		# Update the cordinates
+				# ndie[1] = rollDice( die[1], 'N' )	# Give the new updated dice state.
+				ndie[2][0] = ndie[2][0] + 1		# Increment the cost that you have occured till now.
+				ndie[3].append('N')				# Append the action you took into the list.
+				rolls.append( ndie )			# Lastly append the die on the return children list.
+	if die[0][1] > 0 : # Move West
 		if isValidCell( die[0][0], die[0][1] - 1 , maze ) :	# Now peek into the west cell.
-			if isValidDie( rollDice( die, 'W') ) :	# Check if the west roll gives a valid die.
-				die[0][0] = die[0][1] - 1
-				die[1] = rollDice( die, 'W' )
-				die[2][0] = die[2][0] + 1
-				die[3].append('W')
-				rolls.append( die )	
-	elif die[0][1] < len( maze[0] ) - 1 : # Move East
-		if isValidCell( die[0][0], die[0][1] + 1 , maze ) :	# Now peek into the east cell.
-			if isValidDie( rollDice( die, 'E') ) :	# Check if the east roll gives a valid die.
-				die[0][0] = die[0][1] + 1
-				die[1] = rollDice( die, 'E' )
-				die[2][0] = die[2][0] + 1
-				die[3].append('E')
-				rolls.append( die )
-	elif die[0][0] < len( maze ) - 1 :	# Move South
-		if isValidCell( die[0][0] + 1 , die[0][1], maze ) :	# Now peek into the south cell.
-			if isValidDie( rollDice( die, 'S') ) :	# Check if the south roll gives a valid die.
-				die[0][0] = die[0][0] + 1
-				die[1] = rollDice( die, 'S' )
-				die[2][0] = die[2][0] + 1
-				die[3].append('S')
-				rolls.append( die )
+			wdie = copy.deepcopy( die )
+			if isValidDie(rollDice( wdie[1], 'W') ) :	# Check if the west roll gives a valid die. This also changes the orientation of die since it's referenced.
+				wdie[0][1] = wdie[0][1] - 1
+				wdie[2][0] = wdie[2][0] + 1
+				wdie[3].append('W')
+				rolls.append( wdie )	
+	if die[0][1] < len( maze[0] ) - 1 : # Move East
+		if isValidCell(die[0][0], die[0][1] + 1 , maze ) :	# Now peek into the east cell.
+			edie = copy.deepcopy( die )
+			if isValidDie( rollDice( edie[1], 'E') ) :	# Check if the east roll gives a valid die.
+				edie[0][1] = edie[0][1] + 1
+				edie[2][0] = edie[2][0] + 1
+				edie[3].append('E')
+				rolls.append( edie )
+	if die[0][0] < len( maze ) - 1 :	# Move South
+		if isValidCell(die[0][0] + 1 , die[0][1], maze ) :	# Now peek into the south cell.
+			sdie = copy.deepcopy( die )
+			if isValidDie( rollDice( sdie[1], 'S') ) :	# Check if the south roll gives a valid die.
+				sdie[0][0] = sdie[0][0] + 1
+				sdie[2][0] = sdie[2][0] + 1
+				sdie[3].append('S')
+				rolls.append( sdie )
 	return rolls	# Lastly return the children.
 
 # Right now implementing the a_star algorithm verbatim from the course textbook code base. 
@@ -196,22 +192,24 @@ def a_star(maze, f):
 	if goalTest( maze, die ):
 		return die
 	frontier = [ die ]		# You want the priority queue to be a list that you will try to insert and sort the elements.
-	explored = []	# Do not have to make a set a empty list will do the trick just have to check and append.
+	explored = []			# Do not have to make a set a empty list will do the trick just have to check and append.
 	while frontier:
-		die = frontier.pop( 0 )		# Get the first element from the list, that will be sorted as priority queue.
+		# die = frontier.pop( 0 )		# Get the first element from the list, that will be sorted as priority queue.
+		die = popElement( frontier, f )	# The heuristic is required so that it can pop out the element with least value, since list unsorted.
 		if goalTest( maze, die ):
 			return die
+		explored.append( die )
 		for child in getChildren( die, maze ):
 			if not(isPresent( child, explored )) and not(isPresent( child, frontier )):
-				pqadd( frontier, child, f )
+				frontier.append( child )
 			elif isPresent( child, frontier ):
 				incumbent = frontier[ findIndex( frontier, child ) ]
 				if f( child ) < f( incumbent ):
 					frontier.pop( findIndex(frontier, incumbent) )	#del frontier[incumbent]
-					pqadd(frontier, child, f)
+					frontier.append( child )
 	return None
 
-# Till now the function takes the input problem file.
+# This function takes the file checks for correctness. Gets the heuristics, and calls the astar function and prints results. 
 def main():
 	maze = []
 	if len(sys.argv) != 2:
@@ -223,20 +221,33 @@ def main():
 			print('There seems to be some error with input, please try again.')
 			return		# The program has raised a failure and now halt the execution of the program.
 	maze.pop(0)	# Remove the pass element so we can further process the same. So I get my maze as a list.
-	dice = [ 'u', 'n', 'e', 'w', 's', 'd' ] # Each index of the list represents the number of the dice and letters stand 
-			# for u = up, d = down, n = north, e = east, w = west, s = south. Right now the dice state represents the start position of dice.
-	# Now check the dice roll function for correctness.
-	# dice = rollDice( dice, 'N' )
-	# print( 'After rolling it north' + str(dice) )
 	g_row, g_col = findStatePos( maze, 'G' )
 	h1 = eDistance( g_row, g_col )		# Heuristic 1 a function that gives straight line distance from goal from present cordinates.
 	h2 = mDistance( g_row, g_col )		# Heuristic 2 a function that gives manhattan distance from goal.
 	s_row, s_col = findStatePos( maze, 'S' )
 	# print( "heuristic 1 euclidean distance " + str( h1( s_row, s_col) ) )
-	# print( "heuristic 1 manhattan distance " + str( h2( s_row, s_col) ) )
-	# A* is best first search with the heuristic. How do I send the present cost of 0 to the function.
-	result = a_star( maze, lambda die: die[2][0] + h1(die[0][0], die[0][1]) )	# cost, x, y : cost + h1(x, y) 
-	print( str( result ) )
+	print()
+	print( 'Results for puzzle file ' + sys.argv[1] )
+	result = a_star( maze, lambda die: die[2][0] + h1(die[0][0], die[0][1]) )	# Calling the astar function with problem maze and  heuristic parameters.
+	if type( result ) is type( None ):
+		print( 'No solution was found to the problem, with straight line heuristics.' )
+	else:
+		print( 'Result with straight line heuristic ' )
+		print( 'End orientation of the die is ' + str( result[1] ) )
+		print( 'Path taken or the rolls of the die were in following order ' + str( result[3] ) )
+		print( 'Cost of the path was '+ str( result[2][0] ) )
+	result = a_star( maze, lambda die: die[2][0] + h2(die[0][0], die[0][1]) )	 # cost, x, y : cost + h1(x, y)
+	print()
+	if type( result ) is type( None ):
+		print( 'No solution was found to the problem, with Manhattan distance heuristic.' )
+	else:
+		print( 'Result with Manhattan distance heuristic ' )
+		print( 'End orientation of the die is ' + str( result[1] ) )
+		print( 'Path taken or the rolls of the die were in following order ' + str( result[3] ) )
+		print( 'Cost of the path was '+ str( result[2][0] ) )
+	print( 'End Results for puzzle file ' + sys.argv[1] )
+	print( )
+	print( '==============================================================================================' )
 
 # The starting point for the program.
 main()

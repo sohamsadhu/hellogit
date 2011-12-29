@@ -6,12 +6,14 @@ To execute the program and get the results you only need to type following on ba
 
 ./tscript.sh
 
-This script will dump all the results of the program for each of the puzzle file into a text file called testresults.txt.
+This script will dump all the results of the program for each of the puzzle file into a text file called testresults.txt in the same folder, and if such a file does not exist, the script will create. And if such a file for results exist then that will be cleared completly in each run of the script file and then entered with results from new run.
+Since the script file runs all the individual puzzle files, you do not have to run the program individually.
 
 Results:
-The file testresults.txt will have all the results. For each of the puzzle file for each heuristic the cost to reach from start to goal, the final orientation of the die and the rolls that the die took are shown.
+The file testresults.txt will have all the results consolidated for you. For each of the puzzle file for each heuristic the cost to reach from start to goal, the final orientation of the die and the rolls that the die took are shown.
 The orientation of the die has been shown as a list of characters, where the characters represent the side facing and the index stands for the face of die. For example if index 1 has character 'u', it means the side 1 is facing up. The terminology used for the orientation are u = up, d = down, n = north, s = south, e = east and w = west. With this convention the start state die is represented as [ u, n, e, w, s, d ].
 The rolls for the die are given in order they are taken. The side to which it rolls once is given by the following letters N = North or rolls upside or positive Y axis, S = South or rolls downside or negative Y axis, E = East or rolls right towards positive X axis and W = West or rolls towards negative X axis.
+There is also result that says the number of nodes generated which we get by the number of times a queue is poped. At the end when we find the goal, we add the length of the existing frontier queue with the number of times the queue had been poped to get the final number of states generated. 
 
 Note:
 The shell file may not work if there is no python3.2, or the files are not named in convention puzzle#.txt and all five of them, or if the files are in different folders.

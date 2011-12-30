@@ -91,6 +91,114 @@ def eDistance( x1, y1 ):
 def mDistance( x1, y1 ):
 	return lambda x2, y2 : math.fabs(x1 - x2) + math.fabs(y1 - y2)
 
+# Third heuristic function. Get the Manhattan path cost along with path cost with least number of invalid cells in the path.
+def mbDistance( row1, col1, maze ):
+	return lambda row2, col2 : moDist(maze, row1, col1, row2, col2)
+
+# The function that will be substitued for lambda in the heuristic.
+def moDist( maze, row1, col1, row2, col2 ):
+	if row2 == row1 and col2 == col1 :	# You are on the goal. Heuristic is zero.
+		return 0
+	if row2 == row1 and col2 != col1 :  # You are in the same row.
+		if col1 > col2 :
+			num_obstacle = 0
+			for ch in maze[row2][col2 : col1] :	# Go through cells in between goal and position.
+				if ch == '*' :
+					num_obstacle = num_obstacle + 1  # If obstacle increment number of obstacle.
+			return col1 - col2 + num_obstacle   # Return the straight line distance and number of obstacles.
+		else :	# Since the numbers are not equal so col1 < col2.
+			num_obstacle = 0
+			for ch in maze[row2][col1 : col2] :
+				if ch == '*' :
+					num_obstacle = num_obstacle + 1
+			return col2 - col1 + num_obstacle 
+	if row2 != row1 and col2 == col1 : # You are in same column.
+		if row1 > row2 :
+			num_obstacle = 0
+			for row in maze[row2 : row1] :	# Go through selected rows of maze.
+				if row[col2] == '*' :		# Check the column element for obstacle.
+					num_obstacle = num_obstacle + 1
+			return row1 - row2 + num_obstacle  
+		else :	# Since the numbers are not equal so row1 < row2.
+			num_obstacle = 0
+			for row in maze[row1 : row2] :	
+				if row[col2] == '*' :
+					num_obstacle = num_obstacle + 1
+			return row2 - row1 + num_obstacle
+	if row2 < row1 and col2 > col1 :	# Present location right side above goal. Suffix 1 is for the goal position.
+		# Now I want Manhattan distances on two paths and want to send back the one with least value.
+		num_obstacle1, num_obstacle2 = 0, 0
+		for col in maze[row2][col1 : col2] :
+			if col == '*':
+				num_obstacle1 = num_obstacle1 + 1
+		for row in maze[ row2 + 1 : row1 ] :	# You already counted the cell maze[row2][col1] in previous loop. Do not repeat the same.
+			if row[col1] == '*' :
+				num_obstacle1 = num_obstacle1 + 1
+		for row in maze[ row2 : row1 + 1 ] :	# You would like to include the cell on goal row also.
+			if row[col2] == '*' :
+				num_obstacle2 = num_obstacle2 + 1
+		for col in maze[row1][col1 : col2] :
+			if col == '*' :
+				num_obstacle2 = num_obstacle2 + 1
+		if num_obstacle1 >= num_obstacle2 :
+			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle2  # You want to return heuristic with lesser obstacles.
+		else:
+			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle1
+	if row2 < row1 and col2 < col1 :	# Location left side above goal.
+		num_obstacle1, num_obstacle2 = 0, 0
+		for col in maze[row2][col2 : col1] :
+			if col == '*':
+				num_obstacle1 = num_obstacle1 + 1
+		for row in maze[ row2 + 1 : row1 ] :	# You already counted the cell maze[row2][col1] in previous loop. Do not repeat the same.
+			if row[col1] == '*' :
+				num_obstacle1 = num_obstacle1 + 1
+		for row in maze[ row2 : row1 ] :
+			if row[col2] == '*' :
+				num_obstacle2 = num_obstacle2 + 1
+		for col in maze[row1][col2 : col1] :
+			if col == '*' :
+				num_obstacle2 = num_obstacle2 + 1
+		if num_obstacle1 >= num_obstacle2 :
+			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle2  # You want to return heuristic with lesser obstacles.
+		else:
+			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle1
+	if row2 > row1 and col2 < col1 :	# Location left side below goal.
+		num_obstacle1, num_obstacle2 = 0, 0
+		for col in maze[row2][col2 : col1] :
+			if col == '*':
+				num_obstacle1 = num_obstacle1 + 1
+		for row in maze[ row1 : row2 + 1 ] :	# row2 + 1 so you count the cell maze[row2][col1]
+			if row[col1] == '*' :
+				num_obstacle1 = num_obstacle1 + 1
+		for row in maze[row1 : row2] :
+			if row[col2] == '*' :
+				num_obstacle2 = num_obstacle2 + 1
+		for col in maze[row1][col2 : col1] :
+			if col == '*' :
+				num_obstacle2 = num_obstacle2 + 1
+		if num_obstacle1 >= num_obstacle2 :
+			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle2  # You want to return heuristic with lesser obstacles.
+		else:
+			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle1
+	if row2 > row1 and col2 > col1 :	# Location right side below goal.
+		num_obstacle1, num_obstacle2 = 0, 0
+		for col in maze[row2][col1 : col2] :
+			if col == '*':
+				num_obstacle1 = num_obstacle1 + 1
+		for row in maze[row1 : row2] : 
+			if row[col1] == '*' :
+				num_obstacle1 = num_obstacle1 + 1
+		for row in maze[row1 : row2] :	# You would like to include the cell on goal row also.
+			if row[col2] == '*' :
+				num_obstacle2 = num_obstacle2 + 1
+		for col in maze[row1][col1 : col2] :
+			if col == '*' :
+				num_obstacle2 = num_obstacle2 + 1
+		if num_obstacle1 >= num_obstacle2 :
+			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle2  # You want to return heuristic with lesser obstacles.
+		else:
+			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle1
+
 # Find the cordinates of the start and goal states in the list of lists.
 def findStatePos( maze, state ):
 	x, y = 0, 0							# The x and y cordinate abstraction of list where the state thing could be.
@@ -225,8 +333,9 @@ def main():
 			return		# The program has raised a failure and now halt the execution of the program.
 	maze.pop(0)	# Remove the pass element so we can further process the same. So I get my maze as a list.
 	g_row, g_col = findStatePos( maze, 'G' )
-	h1 = eDistance( g_row, g_col )		# Heuristic 1 a function that gives straight line distance from goal from present cordinates.
-	h2 = mDistance( g_row, g_col )		# Heuristic 2 a function that gives manhattan distance from goal.
+	h1 = eDistance( g_row, g_col )			# Heuristic 1 a function that gives straight line distance from goal from present cordinates.
+	h2 = mDistance( g_row, g_col )			# Heuristic 2 a function that gives manhattan distance from goal.
+	h3 = mbDistance( g_row, g_col, maze )	# Heuristic 3, the Manhattan distance with the obstructions in the paths.
 	# s_row, s_col = findStatePos( maze, 'S' )
 	# print( "heuristic 1 euclidean distance " + str( h1( s_row, s_col) ) )
 	print()
@@ -248,6 +357,17 @@ def main():
 		print( str( num_nodes ) + ' states were generated by the algorithm.' )
 	else:
 		print( 'Result with Manhattan distance heuristic ' )
+		print( 'End orientation of the die is ' + str( result[1] ) )
+		print( 'Path taken or the rolls of the die were in following order ' + str( result[3] ) )
+		print( 'Cost of the path was '+ str( result[2][0] ) )
+		print( 'Number of nodes generated ' + str( num_nodes ) )
+	result, num_nodes = a_star( maze, lambda die: die[2][0] + h3(die[0][0], die[0][1]) )	 # cost, x, y : cost + h1(x, y)
+	print()
+	if type( result ) is type( None ):
+		print( 'No solution was found to the problem, with Manhattan distance with obstacle heuristic.' )
+		print( str( num_nodes ) + ' states were generated by the algorithm.' )
+	else:
+		print( 'Result with Manhattan distance with obstacle heuristic ' )
 		print( 'End orientation of the die is ' + str( result[1] ) )
 		print( 'Path taken or the rolls of the die were in following order ' + str( result[3] ) )
 		print( 'Cost of the path was '+ str( result[2][0] ) )

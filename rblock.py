@@ -92,11 +92,11 @@ def mDistance( x1, y1 ):
 	return lambda x2, y2 : math.fabs(x1 - x2) + math.fabs(y1 - y2)
 
 # Third heuristic function. Get the Manhattan path cost along with path cost with least number of invalid cells in the path.
-def mbDistance( row1, col1, maze ):
-	return lambda row2, col2 : moDist(maze, row1, col1, row2, col2)
+def numObstacles( row1, col1, maze ):
+	return lambda row2, col2 : findNumObstacles(maze, row1, col1, row2, col2)
 
 # The function that will be substitued for lambda in the heuristic.
-def moDist( maze, row1, col1, row2, col2 ):
+def findNumObstacles( maze, row1, col1, row2, col2 ):
 	if row2 == row1 and col2 == col1 :	# You are on the goal. Heuristic is zero.
 		return 0
 	if row2 == row1 and col2 != col1 :  # You are in the same row.
@@ -105,26 +105,26 @@ def moDist( maze, row1, col1, row2, col2 ):
 			for ch in maze[row2][col2 : col1] :	# Go through cells in between goal and position.
 				if ch == '*' :
 					num_obstacle = num_obstacle + 1  # If obstacle increment number of obstacle.
-			return col1 - col2 + num_obstacle   # Return the straight line distance and number of obstacles.
+			return num_obstacle   # Return the straight line distance and number of obstacles.
 		else :	# Since the numbers are not equal so col1 < col2.
 			num_obstacle = 0
 			for ch in maze[row2][col1 : col2] :
 				if ch == '*' :
 					num_obstacle = num_obstacle + 1
-			return col2 - col1 + num_obstacle 
+			return num_obstacle 
 	if row2 != row1 and col2 == col1 : # You are in same column.
 		if row1 > row2 :
 			num_obstacle = 0
 			for row in maze[row2 : row1] :	# Go through selected rows of maze.
 				if row[col2] == '*' :		# Check the column element for obstacle.
 					num_obstacle = num_obstacle + 1
-			return row1 - row2 + num_obstacle  
+			return num_obstacle  
 		else :	# Since the numbers are not equal so row1 < row2.
 			num_obstacle = 0
 			for row in maze[row1 : row2] :	
 				if row[col2] == '*' :
 					num_obstacle = num_obstacle + 1
-			return row2 - row1 + num_obstacle
+			return num_obstacle
 	if row2 < row1 and col2 > col1 :	# Present location right side above goal. Suffix 1 is for the goal position.
 		# Now I want Manhattan distances on two paths and want to send back the one with least value.
 		num_obstacle1, num_obstacle2 = 0, 0
@@ -141,9 +141,9 @@ def moDist( maze, row1, col1, row2, col2 ):
 			if col == '*' :
 				num_obstacle2 = num_obstacle2 + 1
 		if num_obstacle1 >= num_obstacle2 :
-			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle2  # You want to return heuristic with lesser obstacles.
+			return num_obstacle2  # You want to return heuristic with lesser obstacles.
 		else:
-			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle1
+			return num_obstacle1
 	if row2 < row1 and col2 < col1 :	# Location left side above goal.
 		num_obstacle1, num_obstacle2 = 0, 0
 		for col in maze[row2][col2 : col1] :
@@ -159,9 +159,9 @@ def moDist( maze, row1, col1, row2, col2 ):
 			if col == '*' :
 				num_obstacle2 = num_obstacle2 + 1
 		if num_obstacle1 >= num_obstacle2 :
-			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle2  # You want to return heuristic with lesser obstacles.
+			return num_obstacle2  # You want to return heuristic with lesser obstacles.
 		else:
-			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle1
+			return num_obstacle1
 	if row2 > row1 and col2 < col1 :	# Location left side below goal.
 		num_obstacle1, num_obstacle2 = 0, 0
 		for col in maze[row2][col2 : col1] :
@@ -177,9 +177,9 @@ def moDist( maze, row1, col1, row2, col2 ):
 			if col == '*' :
 				num_obstacle2 = num_obstacle2 + 1
 		if num_obstacle1 >= num_obstacle2 :
-			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle2  # You want to return heuristic with lesser obstacles.
+			return num_obstacle2  # You want to return heuristic with lesser obstacles.
 		else:
-			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle1
+			return num_obstacle1
 	if row2 > row1 and col2 > col1 :	# Location right side below goal.
 		num_obstacle1, num_obstacle2 = 0, 0
 		for col in maze[row2][col1 : col2] :
@@ -195,9 +195,9 @@ def moDist( maze, row1, col1, row2, col2 ):
 			if col == '*' :
 				num_obstacle2 = num_obstacle2 + 1
 		if num_obstacle1 >= num_obstacle2 :
-			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle2  # You want to return heuristic with lesser obstacles.
+			return num_obstacle2  # You want to return heuristic with lesser obstacles.
 		else:
-			return math.fabs(row1 - row2) + math.fabs(col1 - col2) + num_obstacle1
+			return num_obstacle1
 
 # Find the cordinates of the start and goal states in the list of lists.
 def findStatePos( maze, state ):
@@ -245,6 +245,7 @@ def popElement( frontier, f ):
 		if f( element ) < min :		# This makes sure that first element with min value gets selected.
 			min = f( element )		# A element with value equal to this element but later in the list will not be selected.
 			index = counter
+			counter = counter + 1
 		else:
 			counter = counter + 1
 	return frontier.pop( index )	# Since lists work as referenced objects so this statement actually removes child from frontier.
@@ -297,18 +298,19 @@ def a_star(maze, f):
 	# There are two things for the initial state. 1. Start state position 2. Correct orientation of dice.
 	s_row, s_col = findStatePos( maze, 'S' )	# Get the start cordinates from the maze.
 	die = startDie( s_row, s_col )
-	num_nodes = 0						# This variable used to track number of nodes or states generated by algorithm.
+	num_nodes, nodes_visited = 0, 0						# This variable used to track number of nodes or states generated by algorithm.
 	if goalTest( maze, die ):
-		return die, num_nodes
+		return die, num_nodes, nodes_visited
 	frontier = [ die ]		# You want the priority queue to be a list that you will try to insert and sort the elements.
 	explored = []			# Do not have to make a set a empty list will do the trick just have to check and append.
 	while frontier:
 		# die = frontier.pop( 0 )		# Get the first element from the list, that will be sorted as priority queue.
 		die = popElement( frontier, f )	# The heuristic is required so that it can pop out the element with least value, since list unsorted.
-		num_nodes = num_nodes + 1		# Each time a element poped from queue so that should give the number of nodes generated via frontier.
+		nodes_visited = nodes_visited + 1		# Each time a element poped from queue so that should give the number of nodes generated via frontier.
+		num_nodes = nodes_visited
 		if goalTest( maze, die ):
 			num_nodes = num_nodes + len( frontier )	  # You not only want the number of elements poped but also that are present in frontier or generated.
-			return die, num_nodes
+			return die, num_nodes, nodes_visited
 		explored.append( die )
 		for child in getChildren( die, maze ):
 			if not(isPresent( child, explored )) and not(isPresent( child, frontier )):
@@ -318,7 +320,21 @@ def a_star(maze, f):
 				if f( child ) < f( incumbent ):
 					frontier.pop( findIndex(frontier, incumbent) )	#del frontier[incumbent]
 					frontier.append( child )
-	return None, num_nodes
+	return None, num_nodes, nodes_visited
+
+def printResults ( result, num_nodes, nodes_visited, heuristic ):
+	if type( result ) is type( None ):
+		print( 'No solution was found to the problem, with ' + heuristic + ' heuristics.' )
+		print( 'Number of nodes visited ' + str( nodes_visited ) )
+		print( str( num_nodes ) + ' states were generated by the algorithm.' )
+	else:
+		print( 'Result with ' + heuristic + ' heuristic ' )
+		print( 'End orientation of the die is ' + str( result[1] ) )
+		print( 'Path taken or the rolls of the die were in following order ' + str( result[3] ) )
+		print( 'Cost of the path was '+ str( result[2][0] ) )
+		print( 'Number of nodes visited ' + str( nodes_visited ) )
+		print( 'Number of nodes generated ' + str( num_nodes ) )
+
 
 # This function takes the file checks for correctness. Gets the heuristics, and calls the astar function and prints results. 
 def main():
@@ -335,43 +351,23 @@ def main():
 	g_row, g_col = findStatePos( maze, 'G' )
 	h1 = eDistance( g_row, g_col )			# Heuristic 1 a function that gives straight line distance from goal from present cordinates.
 	h2 = mDistance( g_row, g_col )			# Heuristic 2 a function that gives manhattan distance from goal.
-	h3 = mbDistance( g_row, g_col, maze )	# Heuristic 3, the Manhattan distance with the obstructions in the paths.
+	h3 = numObstacles( g_row, g_col, maze )	# Heuristic 3, the Manhattan distance with the obstructions in the paths.
 	# s_row, s_col = findStatePos( maze, 'S' )
-	# print( "heuristic 1 euclidean distance " + str( h1( s_row, s_col) ) )
+	# print( "heuristic 3 euclidean distance " + str( h3( s_row, s_col) ) )
 	print()
 	print( 'Results for puzzle file ' + sys.argv[1] )
-	result, num_nodes = a_star( maze, lambda die: die[2][0] + h1(die[0][0], die[0][1]) )# Calling the astar function with problem maze and  heuristic parameters.
-	if type( result ) is type( None ):
-		print( 'No solution was found to the problem, with straight line heuristics.' )
-		print( str( num_nodes ) + ' states were generated by the algorithm.' )
-	else:
-		print( 'Result with straight line heuristic ' )
-		print( 'End orientation of the die is ' + str( result[1] ) )
-		print( 'Path taken or the rolls of the die were in following order ' + str( result[3] ) )
-		print( 'Cost of the path was '+ str( result[2][0] ) )
-		print( 'Number of nodes generated ' + str( num_nodes ) )
-	result, num_nodes = a_star( maze, lambda die: die[2][0] + h2(die[0][0], die[0][1]) )	 # cost, x, y : cost + h1(x, y)
+	result, num_nodes, nodes_visited = a_star( maze, lambda die: die[2][0] + h1(die[0][0], die[0][1]) )# Calling the astar function with problem maze and  heuristic parameters.
+	printResults( result, num_nodes, nodes_visited, 'straight line' )
+	result, num_nodes, nodes_visited = a_star( maze, lambda die: die[2][0] + h2(die[0][0], die[0][1]) )	 # cost, x, y : cost + h1(x, y)
 	print()
-	if type( result ) is type( None ):
-		print( 'No solution was found to the problem, with Manhattan distance heuristic.' )
-		print( str( num_nodes ) + ' states were generated by the algorithm.' )
-	else:
-		print( 'Result with Manhattan distance heuristic ' )
-		print( 'End orientation of the die is ' + str( result[1] ) )
-		print( 'Path taken or the rolls of the die were in following order ' + str( result[3] ) )
-		print( 'Cost of the path was '+ str( result[2][0] ) )
-		print( 'Number of nodes generated ' + str( num_nodes ) )
-	result, num_nodes = a_star( maze, lambda die: die[2][0] + h3(die[0][0], die[0][1]) )	 # cost, x, y : cost + h1(x, y)
+	printResults( result, num_nodes, nodes_visited, 'Manhattan distance' )
+	result, num_nodes, nodes_visited = a_star( maze, lambda die: die[2][0] + h3(die[0][0], die[0][1]) )	 # cost, x, y : cost + h1(x, y)
 	print()
-	if type( result ) is type( None ):
-		print( 'No solution was found to the problem, with Manhattan distance with obstacle heuristic.' )
-		print( str( num_nodes ) + ' states were generated by the algorithm.' )
-	else:
-		print( 'Result with Manhattan distance with obstacle heuristic ' )
-		print( 'End orientation of the die is ' + str( result[1] ) )
-		print( 'Path taken or the rolls of the die were in following order ' + str( result[3] ) )
-		print( 'Cost of the path was '+ str( result[2][0] ) )
-		print( 'Number of nodes generated ' + str( num_nodes ) )
+	printResults( result, num_nodes, nodes_visited, 'Manhattan distance with obstacle')
+	print()
+	result, num_nodes, nodes_visited = a_star( maze, lambda die: die[2][0] )
+	printResults( result, num_nodes, nodes_visited, 'uniform search or no heuristic')
+	print()
 	print( 'End Results for puzzle file ' + sys.argv[1] )
 	print( )
 	print( '==============================================================================================' )

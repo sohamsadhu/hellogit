@@ -61,12 +61,12 @@
 			Nodes generated & 22 & 76 & 3 & 122 & 1104 \\ 
 		\hline
 	\end{tabular} \newline
-	\newline For least obstacles on Manhattan distance plus Manhattan distance. \newline
+	\newline For least obstacles on Manhattan path plus Manhattan distance. \newline
 	\begin{tabular}{ | c | c | c | c | c | c | }
 		\hline
 			Puzzle files $\rightarrow$ & Puzzle1 & Puzzle2 & Puzzle3 & Puzzle4 & Puzzle5 \\ \hline
-			Nodes visited &   28 & 89  & 3 & 137 & 1272 \\ \hline
-			Nodes generated & 36 & 100 & 3 & 152 & 1278 \\
+			Nodes visited &   15 & 58 & 3 & 61 & 849 \\ \hline
+			Nodes generated & 22 & 76 & 3 & 76 & 1092 \\
 		\hline
 	\end{tabular} \newline
 	\newline Considering path cost only. \newline
@@ -81,9 +81,9 @@
 {\bf Discussion:} 
 \begin{enumerate}
 	\item The data from five experiments seems to be small to draw any general conclusion about heuristics or their performance.
-	\item Even though some heuristics are intuitively look to be worse than others. The only Manhattan distance heuristic worked the best followed by the straight line heuristic. The Manhattan distance heuristic with the least obstacle proved to be giving almost no heuristic at all, infact it added to the confusion rather than solving it.
-	\item Manhattan distance heuristic giving a better solution than straight line distance heuristic can be expected since heuristic 2 dominates over heuristic 1. As it can be seen from the number of states generated for the puzzle 4 and puzzle 5. However the performance of the third heuristic Manhattan with the least obstacle seems to be surprising given the fact that Manhattan with obstacle should give the same performance as that of Manhattan.
-	\item It was interesting to see whether the heuristics were having any impact or not. For this I sent a heuristic function that returns zero for heuristic and only sends back the path cost. And found that uniform cost search generated same number of states than A* for puzzle 4 and for puzzle 5 as that with the third heuristic.
+	\item For small puzzles all the heuristics performed equally well, than only the uniform cost search.
+	\item The difference in heuristics was much more pronounced when the puzzle was made large. Like for puzzle 4 and puzzle 5 Manhattan distance and the Manhattan distance plus obstacles on that path generated many less states than the straight line or just the unifrom cost search.
+	\item In all the cases having a better heuristic trumped and gave more efficiency in terms of states generated rather than having no heuristic at all.
 \end{enumerate}
 
 \end{document}

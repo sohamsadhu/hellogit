@@ -361,7 +361,7 @@ def main():
 	result, num_nodes, nodes_visited = a_star( maze, lambda die: die[2][0] + h2(die[0][0], die[0][1]) )	 # cost, x, y : cost + h1(x, y)
 	print()
 	printResults( result, num_nodes, nodes_visited, 'Manhattan distance' )
-	result, num_nodes, nodes_visited = a_star( maze, lambda die: die[2][0] + h3(die[0][0], die[0][1]) )	 # cost, x, y : cost + h1(x, y)
+	result, num_nodes, nodes_visited = a_star( maze, lambda die: die[2][0] + h2(die[0][0], die[0][1]) + h3(die[0][0], die[0][1]) )	 # cost, x, y : cost + h1(x, y)
 	print()
 	printResults( result, num_nodes, nodes_visited, 'Manhattan distance with obstacle')
 	print()
